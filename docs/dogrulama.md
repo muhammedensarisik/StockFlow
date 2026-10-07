@@ -5,6 +5,7 @@
 - Uygulamadaki gerçek `StockRules.kt` ve `StockRulesTest.kt` dosyaları bağımsız Kotlin/JVM kontrolünde derlendi.
 - **7 stok kuralı testi geçti; 0 hata, 0 başarısız test.** JUnit XML kanıtı `docs/verification/stock-rules-results.xml` içinde.
 - Compose ekranları dahil uygulamanın Kotlin kaynakları `compileDebugKotlin` ile kontrol edildi. Bu kontrol Android kaynak paketlemesi ve Room kod üretimi hariç yapıldı; tam Android build anlamına gelmez.
+- Test kaynakları `compileDebugUnitTestKotlin` ile aynı sınırlı koşullarda derlendi. Dokuz Room testinin sözdizimi/tip kontrolü başarılıdır; davranış testleri yürütülmedi.
 - Gradle 8.13 dağıtımı indirildi ve resmi SHA-256 değeriyle doğrulandı; Gradle Wrapper eklendi.
 
 ## Çalıştırılamayan kontroller
