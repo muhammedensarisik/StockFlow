@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.stockflow.app.domain.StockRulesTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-07T06:44:16.565Z" hostname="ENSARPC" time="0.029">
+  <properties/>
+  <testcase name="stock upper bound is enforced" classname="com.stockflow.app.domain.StockRulesTest" time="0.01"/>
+  <testcase name="zero and negative amounts are rejected" classname="com.stockflow.app.domain.StockRulesTest" time="0.018"/>
+  <testcase name="stock may reach zero" classname="com.stockflow.app.domain.StockRulesTest" time="0.0"/>
+  <testcase name="corrupt starting balance blocks writes" classname="com.stockflow.app.domain.StockRulesTest" time="0.0"/>
+  <testcase name="insufficient stock is rejected" classname="com.stockflow.app.domain.StockRulesTest" time="0.0"/>
+  <testcase name="exit decreases stock" classname="com.stockflow.app.domain.StockRulesTest" time="0.0"/>
+  <testcase name="entry increases stock" classname="com.stockflow.app.domain.StockRulesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
