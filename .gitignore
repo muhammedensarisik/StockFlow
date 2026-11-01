@@ -6,3 +6,7 @@ local.properties
 *.iml
 *.apk
 captures/
+server/.venv/
+__pycache__/
+*.db
+.pytest_cache/

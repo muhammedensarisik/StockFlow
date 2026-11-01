@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
@@ -23,6 +24,8 @@ import androidx.navigation.compose.rememberNavController
 import com.stockflow.app.data.local.CategoryEntity
 import com.stockflow.app.data.local.ProductStock
 import com.stockflow.app.data.local.StockMovementEntity
+import com.stockflow.app.data.sync.SyncPhase
+import com.stockflow.app.data.sync.SyncStatus
 import com.stockflow.app.domain.MovementType
 import com.stockflow.app.domain.SyncState
 import java.time.Instant
@@ -40,6 +43,7 @@ fun StockFlowApp(vm: StockViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
+    val syncStatus by vm.syncStatus.collectAsStateWithLifecycle()
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
@@ -93,7 +97,7 @@ fun StockFlowApp(vm: StockViewModel) {
         ) { padding ->
             NavHost(navController = nav, startDestination = "products", modifier = Modifier.padding(padding)) {
                 composable("products") {
-                    ProductsScreen(state, onAdd = {
+                    ProductsScreen(state, syncStatus, onSync = vm::syncNow, onAdd = {
                         vm.clearMessage(); editId = null; showProductForm = true
                     }, onOpen = { nav.navigate("product/$it") })
                 }
@@ -142,10 +146,16 @@ fun StockFlowApp(vm: StockViewModel) {
 }
 
 @Composable
-private fun ProductsScreen(state: StockUiState, onAdd: () -> Unit, onOpen: (String) -> Unit) {
+private fun ProductsScreen(
+    state: StockUiState,
+    syncStatus: SyncStatus,
+    onSync: () -> Unit,
+    onAdd: () -> Unit,
+    onOpen: (String) -> Unit,
+) {
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("Stok görünümü", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
-        item { LocalNotice() }
+        item { SyncBanner(syncStatus, state.products.sumOf { it.pendingCount }, onSync) }
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text("${state.products.size} ürün", style = MaterialTheme.typography.titleMedium)
@@ -222,9 +232,13 @@ private fun ProductScreen(
                 Text("${product.stock} adet", color = Color.White, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 if (product.stock == 0L) Text("Stok tükendi", color = Color.White)
                 Text("${product.pendingCount} hareket sunucu onayı bekliyor", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                Text(product.serverStock?.let { "Sunucudaki stok: $it adet" } ?: "Ürün henüz sunucuya gönderilmedi",
+                    color = Color.White, style = MaterialTheme.typography.bodySmall)
             }
         } }
-        item { LocalNotice() }
+        if (product.serverStock != null && product.pendingCount == 0L && product.serverStock != product.stock) {
+            item { Notice("Cihaz ve sunucu stoğu farklı. Başka bir cihaz bu üründe hareket yapmış olabilir.") }
+        }
         item { Text("Yeni stok hareketi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
         item { Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             FilterChip(selected = type == MovementType.IN, onClick = { type = MovementType.IN }, enabled = !busy, label = { Text("Giriş +") })
@@ -252,7 +266,8 @@ private fun ProductScreen(
                         SyncState.PENDING -> "Senkronizasyon bekliyor"
                         SyncState.SYNCED -> "Sunucu tarafından onaylandı"
                         SyncState.REJECTED -> "Reddedildi: ${movement.rejectionReason.orEmpty()}"
-                    }, style = MaterialTheme.typography.labelMedium, color = Green)
+                    }, style = MaterialTheme.typography.labelMedium,
+                        color = if (movement.syncState == SyncState.REJECTED) MaterialTheme.colorScheme.error else Green)
                 }
             }
         }
@@ -288,17 +303,47 @@ private fun ProductForm(
 }
 
 @Composable
-private fun LocalNotice() {
-    Text("Veriler bu cihazda saklanır. Sunucu senkronizasyonu henüz eklenmedi.",
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.fillMaxWidth().background(Color(0xFFE1EDE4), MaterialTheme.shapes.medium).padding(12.dp))
+private fun SyncBanner(status: SyncStatus, pendingMovements: Long, onSync: () -> Unit) {
+    val title = when (status.phase) {
+        SyncPhase.IDLE -> "Senkronizasyon"
+        SyncPhase.QUEUED -> "Sırada"
+        SyncPhase.RUNNING -> "Gönderiliyor…"
+        SyncPhase.DONE -> "Senkronize"
+        SyncPhase.OFFLINE -> "Çevrimdışı"
+        SyncPhase.ERROR -> "Sorun var"
+    }
+    val background = when (status.phase) {
+        SyncPhase.OFFLINE -> Color(0xFFFFF1D6)
+        SyncPhase.ERROR -> Color(0xFFFBE3E1)
+        else -> Color(0xFFE1EDE4)
+    }
+    Column(Modifier.fillMaxWidth().background(background, MaterialTheme.shapes.medium).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text("$pendingMovements bekleyen hareket", style = MaterialTheme.typography.labelMedium)
+        }
+        Text("Kayıtlar önce bu cihaza yazılır, internet gelince sunucuya gönderilir. ${status.message}",
+            style = MaterialTheme.typography.bodySmall)
+        status.lastSuccessAt?.let { Text("Son başarılı: ${formatDate(it)}", style = MaterialTheme.typography.labelSmall) }
+        OutlinedButton(onClick = onSync, enabled = status.phase != SyncPhase.RUNNING) { Text("Şimdi senkronize et") }
+    }
+}
+
+@Composable
+private fun Notice(text: String) {
+    Text(text, style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF1D6), MaterialTheme.shapes.medium).padding(12.dp))
 }
 
 @Composable
 private fun ErrorText(message: String?) {
     if (message != null) Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
 }
+@Composable
+private fun formatDate(timestamp: Long): String {
+    return DateTimeFormatter
+        .ofPattern("dd MMM yyyy · HH:mm", Locale.forLanguageTag("tr-TR"))
+        .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(timestamp))
+}
 
-private fun formatDate(timestamp: Long): String = DateTimeFormatter
-    .ofPattern("dd MMM yyyy · HH:mm", Locale.forLanguageTag("tr-TR"))
-    .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(timestamp))

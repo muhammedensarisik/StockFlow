@@ -6,6 +6,7 @@ import com.stockflow.app.data.StockRepository
 import com.stockflow.app.data.local.CategoryEntity
 import com.stockflow.app.data.local.ProductStock
 import com.stockflow.app.data.local.StockMovementEntity
+import com.stockflow.app.data.sync.SyncTrigger
 import com.stockflow.app.domain.MovementType
 import com.stockflow.app.domain.StockRuleViolation
 import kotlinx.coroutines.CancellationException
@@ -25,7 +26,10 @@ data class StockUiState(
     val readError: String? = null,
 )
 
-class StockViewModel(private val repository: StockRepository) : ViewModel() {
+class StockViewModel(
+    private val repository: StockRepository,
+    private val sync: SyncTrigger,
+) : ViewModel() {
     val state = combine(repository.products, repository.categories, repository.movements) { products, categories, movements ->
         StockUiState(products, categories, movements, loading = false)
     }.catch { error ->
@@ -38,7 +42,10 @@ class StockViewModel(private val repository: StockRepository) : ViewModel() {
     private val _message = MutableStateFlow<String?>(null)
     val message = _message.asStateFlow()
 
+    val syncStatus = sync.status
+
     fun clearMessage() { _message.value = null }
+    fun syncNow() = sync.request()
     fun createCategory(name: String, onSuccess: () -> Unit) = perform(onSuccess) {
         repository.createCategory(name)
     }
@@ -57,6 +64,8 @@ class StockViewModel(private val repository: StockRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 action()
+                // Every successful write leaves a PENDING record behind; ask for a sync.
+                sync.request()
                 onSuccess()
             } catch (cancelled: CancellationException) {
                 throw cancelled

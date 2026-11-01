@@ -16,13 +16,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val repository = (application as StockFlowApplication).repository
-            val factory = remember(repository) {
+            val app = application as StockFlowApplication
+            val factory = remember(app) {
                 object : ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         require(modelClass.isAssignableFrom(StockViewModel::class.java))
-                        return StockViewModel(repository) as T
+                        return StockViewModel(app.repository, app.syncScheduler) as T
                     }
                 }
             }

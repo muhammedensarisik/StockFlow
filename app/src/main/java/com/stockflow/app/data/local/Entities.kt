@@ -31,6 +31,8 @@ data class ProductEntity(
     val categoryId: String?,
     val updatedAt: Long,
     val syncState: SyncState = SyncState.PENDING,
+    // Last stock value the server reported. Null until the product reached the server once.
+    val serverStock: Long? = null,
 )
 
 @Entity(
@@ -60,6 +62,7 @@ data class ProductStock(
     val categoryName: String?,
     val stock: Long,
     val pendingCount: Long,
+    val serverStock: Long?,
 )
 
 class RoomConverters {
