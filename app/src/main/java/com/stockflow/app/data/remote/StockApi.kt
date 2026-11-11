@@ -16,7 +16,6 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
-/** HTTP endpoints of the FastAPI server in /server. Field names follow the server's snake_case JSON. */
 interface StockApi {
     @PUT("categories/{id}")
     suspend fun putCategory(@Path("id") id: String, @Body body: CategoryDto)
@@ -43,7 +42,6 @@ interface StockApi {
                 .create(StockApi::class.java)
         }
 
-        /** FastAPI errors look like {"detail": "..."}; returns that text if present. */
         fun errorDetail(error: HttpException): String? = runCatching {
             val body = error.response()?.errorBody()?.string() ?: return null
             json.parseToJsonElement(body).jsonObject["detail"]?.jsonPrimitive?.content

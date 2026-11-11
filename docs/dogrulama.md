@@ -1,4 +1,11 @@
-# Doğrulama durumu — 20 Ekim 2026
+# Doğrulama durumu — 1 Kasım 2026
+
+## 1 Kasım ekleri
+
+- PostgreSQL 17.6 (taşınabilir kurulum) üzerinde sunucu testleri: **10 test, 0 başarısız.** Aynı testler SQLite'ta da geçiyor.
+- Sunucu `run-postgres.ps1` ile PostgreSQL üzerinde çalıştı; emülatörde demo senaryosu (giriş 100 → çevrimdışı 20 ve 50 çıkış → ikinci cihaz 70 → internet gelince 20 onay, 50 ret, merkezi stok 10) kaydedildi: `sunum/stockflow-demo-kisa.mp4`.
+
+## 20 Ekim
 
 ## Başarılı kontroller
 
@@ -22,6 +29,5 @@ Room testleri önceki denemelerde `UnsatisfiedLinkError: no conscrypt_openjdk_jn
 ## Henüz doğrulanmayanlar
 
 - `:app:lintDebug` çalıştırılmadı.
-- Sunucu PostgreSQL ile çalıştırılmadı; testler SQLite üzerinde. Koşullu `UPDATE` iki veritabanında da atomiktir, ancak PostgreSQL ile ayrıca test edilmeli.
 - Fiziksel telefon (LAN IP ile) denenmedi.
 - Kullanıcı girişi ve sunucudan veri çekme yok (bkz. README → Sonraki adım).

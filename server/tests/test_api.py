@@ -1,3 +1,4 @@
+import os
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -10,8 +11,11 @@ from app.main import app, get_db
 
 @pytest.fixture
 def client(tmp_path):
-    # A real SQLite file (not :memory:) so parallel requests use separate connections.
-    engine = make_engine(f"sqlite:///{tmp_path / 'test.db'}")
+    # TEST_DATABASE_URL runs the same tests on PostgreSQL (its tables are dropped before every test).
+    # Otherwise a real SQLite file (not :memory:) so parallel requests use separate connections.
+    url = os.getenv("TEST_DATABASE_URL") or f"sqlite:///{tmp_path / 'test.db'}"
+    engine = make_engine(url)
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, expire_on_commit=False)
 

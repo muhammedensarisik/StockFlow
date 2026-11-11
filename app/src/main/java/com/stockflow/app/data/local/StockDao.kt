@@ -57,7 +57,6 @@ interface StockDao {
     @Update suspend fun updateProduct(product: ProductEntity)
     @Insert suspend fun insertMovement(movement: StockMovementEntity)
 
-    // --- Sync queue ---
 
     @Query("SELECT * FROM categories WHERE syncState = 'PENDING' ORDER BY updatedAt")
     suspend fun pendingCategories(): List<CategoryEntity>
@@ -65,7 +64,6 @@ interface StockDao {
     @Query("SELECT * FROM products WHERE syncState = 'PENDING' ORDER BY updatedAt")
     suspend fun pendingProducts(): List<ProductEntity>
 
-    // A movement is sent only after its product exists on the server.
     @Query("""
         SELECT m.* FROM stock_movements m JOIN products p ON p.id = m.productId
         WHERE m.syncState = 'PENDING' AND p.syncState = 'SYNCED'
@@ -82,7 +80,6 @@ interface StockDao {
     @Query("SELECT COUNT(*) FROM stock_movements WHERE syncState = 'PENDING'")
     suspend fun pendingMovementCount(): Int
 
-    // updatedAt guard: if the user edited the row while it was being sent, it stays PENDING.
     @Query("UPDATE categories SET syncState = 'SYNCED' WHERE id = :id AND updatedAt = :updatedAt")
     suspend fun markCategorySynced(id: String, updatedAt: Long)
 

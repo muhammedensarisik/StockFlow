@@ -18,7 +18,6 @@ class StockFlowApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Anything left PENDING from an earlier session is sent once a network is available.
         syncScheduler.request()
     }
 }

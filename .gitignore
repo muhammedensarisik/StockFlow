@@ -10,3 +10,4 @@ server/.venv/
 __pycache__/
 *.db
 .pytest_cache/
+sunum/stockflow-demo.mp4

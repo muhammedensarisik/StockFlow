@@ -64,7 +64,7 @@ class StockViewModel(
         viewModelScope.launch {
             try {
                 action()
-                // Every successful write leaves a PENDING record behind; ask for a sync.
+
                 sync.request()
                 onSuccess()
             } catch (cancelled: CancellationException) {

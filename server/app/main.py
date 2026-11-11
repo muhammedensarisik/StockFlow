@@ -26,7 +26,8 @@ def get_db() -> Iterator[Session]:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    # Also names the database in use, so a demo can show it is PostgreSQL or SQLite.
+    return {"status": "ok", "database": engine.dialect.name}
 
 
 @app.put("/categories/{category_id}")

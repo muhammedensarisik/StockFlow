@@ -4,7 +4,7 @@
 
 **Bu sürüm (0.2, 20 Ekim):** Android (Kotlin + Compose + Room) yerel stok uygulaması **ve** FastAPI sunucusu. Bekleyen (`PENDING`) kategori, ürün ve hareketler WorkManager ile internet gelince sunucuya gönderilir. Sunucu her hareketi telefonda üretilen UUID ile tanır: aynı hareket iki kez gelirse stoğu bir kez değiştirir (idempotency). Stok yetmezse hareketi reddeder; telefonda hareket `Reddedildi` ve sebebiyle görünür, silinmez.
 
-**Henüz yok:** kullanıcı girişi, sunucudan telefona veri çekme (başka cihazın hareketleri telefona inmez, yalnızca "sunucudaki stok" gösterilir), PostgreSQL ile çalıştırılmış demo (kod hazır, demo SQLite ile), kategori düzenleme.
+**Henüz yok:** kullanıcı girişi, sunucudan telefona veri çekme (başka cihazın hareketleri telefona inmez, yalnızca "sunucudaki stok" gösterilir), kategori düzenleme.
 
 **Doğrulama:** 21 Android testi + 10 sunucu testi geçti, APK derlendi, emülatörde uçtan uca senkronizasyon denendi. Ayrıntılar `docs/dogrulama.md` içinde.
 
@@ -28,6 +28,9 @@ cd server
 
 - API belgeleri ve elle deneme: http://localhost:8000/docs
 - Varsayılan veritabanı `server/stockflow.db` (SQLite). PostgreSQL için: `$env:DATABASE_URL="postgresql+psycopg://kullanici:parola@localhost:5432/stockflow"`.
+- Bu bilgisayarda taşınabilir PostgreSQL 17 `%LOCALAPPDATA%\StockFlowPostgres` altında kurulu (yalnızca localhost, şifresiz). `powershell -ExecutionPolicy Bypass -File serverun-postgres.ps1` veritabanını başlatıp sunucuyu PostgreSQL ile açar; `http://localhost:8000/health` → `"database":"postgresql"`.
+- Testleri PostgreSQL'de çalıştırmak için: `$env:TEST_DATABASE_URL="postgresql+psycopg://stockflow@localhost:5432/stockflow_test"` sonra `pytest`.
+- Demo videosu: `sunum/stockflow-demo-kisa.mp4` (1:50, altyazılı).
 - Emülatör bilgisayardaki sunucuya `http://10.0.2.2:8000/` adresiyle ulaşır (varsayılan). Gerçek telefonda sunucuyu `--host 0.0.0.0` ile başlat ve uygulamayı `.\gradlew.bat :app:installDebug -Pstockflow.serverUrl=http://<bilgisayar-IP>:8000/` ile kur.
 
 ## Açılış
@@ -97,5 +100,4 @@ Yol ön eki: `app/src/main/java/com/stockflow/app/`.
 
 1. Sunucudan veri çekme (pull): başka cihazların hareketlerini telefona indirip cihaz stoğunu sunucuyla uzlaştırmak.
 2. Temel kullanıcı girişi (parola hash + token) ve korunan uç noktalar.
-3. Sunucuyu PostgreSQL ile çalıştırıp eşzamanlılık testini PostgreSQL üzerinde tekrarlamak.
-4. Reddedilen hareket için kullanıcı akışı (ör. yeniden düzenleyip yeni hareket olarak gönderme).
+3. Reddedilen hareket için kullanıcı akışı (ör. yeniden düzenleyip yeni hareket olarak gönderme).

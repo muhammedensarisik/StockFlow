@@ -23,14 +23,8 @@ data class SyncStatus(
     val lastSuccessAt: Long? = null,
 )
 
-/** What the caller (WorkManager) should do next. */
 enum class SyncOutcome { SUCCESS, RETRY, FAILED }
 
-/**
- * Sends the local PENDING queue to the server in a fixed order: categories, products, movements.
- * Every movement keeps the UUID it got on the phone, so resending after a lost response is safe:
- * the server recognises the ID and returns the stored result instead of changing stock again.
- */
 class SyncManager(
     private val dao: StockDao,
     private val api: StockApi,
@@ -71,7 +65,6 @@ class SyncManager(
                 } catch (e: HttpException) {
                     if (e.code() >= 500) throw e
                     if (e.code() == 404 && product.categoryId != null) {
-                        // The category is missing on the server (for example its DB was reset): send it again.
                         dao.markCategoryPending(product.categoryId)
                     } else {
                         problems += "Ürün \"${product.name}\": ${StockApi.errorDetail(e) ?: "HTTP ${e.code()}"}"
@@ -87,7 +80,6 @@ class SyncManager(
                         dao.markMovementResult(movement.id, SyncState.SYNCED, null)
                         sent++
                     } else {
-                        // Rejected movements stay in history with the reason; they are not deleted.
                         dao.markMovementResult(movement.id, SyncState.REJECTED, result.reason ?: "Sunucu reddetti.")
                         rejected++
                     }
@@ -95,7 +87,6 @@ class SyncManager(
                 } catch (e: HttpException) {
                     when {
                         e.code() >= 500 -> throw e
-                        // Product vanished on the server: send the product again on the next run.
                         e.code() == 404 -> {
                             dao.markProductPending(movement.productId)
                             problems += "Ürün sunucuda bulunamadı; yeniden gönderilecek."
@@ -120,7 +111,6 @@ class SyncManager(
                 _status.value = SyncStatus(SyncPhase.DONE, "Senkronize edildi. $summary", clock())
                 SyncOutcome.SUCCESS
             } else if (problems.isEmpty()) {
-                // e.g. a 404 made a product PENDING again; another run will send it.
                 _status.value = SyncStatus(SyncPhase.QUEUED, summary, _status.value.lastSuccessAt)
                 SyncOutcome.RETRY
             } else {
